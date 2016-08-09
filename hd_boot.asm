@@ -89,7 +89,7 @@ hd_bootloader_main:
 
 
 welcome_string: db 13, 10, 13, 10, "Welcome to the OS.", 0
-prompt_string: db 13, 10, "Select a disk (F/H) from which to run a program", 13, 10, "   (F, sector 3 to assemble to sector 5 of HD): ", 0
+prompt_string: db 13, 10, "Select a disk (F/H) from which to run a program", 13, 10, "   (F, sector 3 to 'assemble' to HD): ", 0
 
 times 510-($-$$) db 0		; Pad rest of sector and add bootloader signature
 dw 0xAA55
