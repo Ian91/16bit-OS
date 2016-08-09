@@ -3,7 +3,7 @@ This OS runs in 16-bit real mode. I've been testing it on QEmu with the i386 VM 
 
 The stack segment still needs to be set up before any pushing or popping can be added.
 
-HOW IT WORKS:
+HOW IT WORKS:  
 	1. The script assembles the three source files into "raw binary" format (no PE or ELF executable metadata).  
 	2. The script writes floppy_boot.bin, hd_boot.bin, and assembler.bin to sectors 1, 2, and 3 (respectively) of a   virtualized floppy disk.  
 	3. The script starts up a virtual machine with an i386 processor and 128 MB of RAM (the default).  
