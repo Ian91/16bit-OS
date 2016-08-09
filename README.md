@@ -20,4 +20,4 @@ HOW IT WORKS:
 	6. When the VM is restarted with the same floppy and hard drive, it now boots from the hard drive, and the user is      
 	   prompted to enter a hard drive or floppy drive sector from which a program will be loaded and executed.  
 	<br />
-	7. The user can, for example, enter "F3" to load the "assembler" program from sector 3 of the floppy. They can then enter bytes that are written to sector 5 of the hard drive. On reboot, the user can type "H5" to execute these bytes.  
+	7. The user can, for example, enter "F3" to load the "assembler" program from sector 3 of the floppy. They can then enter "n" (some number 1-9) and type some bytes that are written to sector n of the hard drive.
