@@ -1,3 +1,8 @@
+# This script assumes that the hard drive "test.dr" already exists
+#   If it doesn't, run:
+#		qemu-img create test.dr 128M
+
+
 nasm -f bin floppy_boot.asm -o floppy_boot.bin
 nasm -f bin hd_boot.asm -o hd_boot.bin
 nasm -f bin assembler.asm -o assembler.bin
