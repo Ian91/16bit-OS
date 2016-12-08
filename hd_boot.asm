@@ -1,95 +1,116 @@
 BITS 16
 
-hd_bootloader_main:
-	mov bx, 0x07C0		; Set data segment to bootloader's default segment
-	mov ds, bx
+floppy_bootloader_main:
+	MOV BX, 0x07C0		; Set data segment to bootloader's default segment
+	MOV DS, BX
 
-	mov bx, welcome_string		; Print "welcome" message
-	mov ah, 0x0E
-	print_welcome_loop:
-		mov al, byte [bx]
-		int 0x10
-		inc bx
-		cmp byte [bx], 0
-		jne print_welcome_loop
-	;end print_welcome_loop
+	_start:
+	MOV BX, welcome_string
+	CALL print 
+	MOV BX, option_1_string
+	CALL print
+	MOV BX, option_2_string
+	CALL print
+	MOV BX, option_3_string
+	CALL print 	
 
-	mov al, 13			; Print CR/LF
-	int 0x10	
-	mov al, 10
-	int 0x10
-
-	mov bx, prompt_string		; Prompt user to enter program drive and sector
-	mov ah, 0x0E
-	print_prompt_loop:
-		mov al, byte [bx]
-		int 0x10
-		inc bx
-		cmp byte [bx], 0
-		jne print_prompt_loop
-	;end print_prompt_loop
-
-	mov ah, 0x00		   ; Get floppy sector from which to read program
-	int 0x16		   ;    (goes into cl parameter)
-	mov ah, 0x0E
-	int 0x10		   ; Tell user what they entered
-	cmp byte al, 'F'
-	je load_floppy_program
-	cmp byte al, 'H'
-	je load_hd_program
-	jmp $		           ; Else, crash OS	
-
-
-   load_floppy_program:
-
-	mov ah, 0x00		   ; Get floppy sector from which to read program
-	int 0x16		   ;    (goes into cl parameter)
-	mov ah, 0x0E
-	int 0x10		   ; Tell user what they entered
-	mov cl, al
-	sub cl, 48
+	MOV AH, 0x00
+	INT 0x16
+	MOV AH, 0x0E
+	INT 0x10
+	CMP AL, 49
+	JE choice_run_or_read_sector
+	CMP AL, 50
+	JE choice_copy_floppy_sector
+	CMP AL, 51
+	JE choice_show_filesystem
 	
-				   ; Read program from floppy disk
-	mov ah, 0x02		   ; BIOS int13h "read sector" function
-	mov al, 1		   ; Number of sectors to read
-	mov ch, 0		   ; Cylinder/track
-	mov dh, 0		   ; Head
-	mov dl, 0		   ; Disk number (here, the floppy disk)
-	mov bx, 0x07C0		   ; Segment containing the destination buffer
-	mov es, bx
-	mov bx, 0x200		   ; Destination buffer offset
-	int 0x13
+	MOV BX, invalid_choice_string
+	CALL print
+	JMP _start
 
-	jmp 0x200		   ; Jump to program
-   ;end load_floppy_program
+	choice_run_or_read_sector:
+		CALL get_run_program_sector
+		JMP 0x200	
+	choice_copy_floppy_sector:
+		CALL get_program_copy_sector
+		JMP 0x200
+	choice_show_filesystem:
+		CALL get_show_filesystem_sector
+		JMP 0x200
 
+	%if 0
+				   
 
-   load_hd_program:
-
-	mov ah, 0x00		   ; Get hard drive sector from which to read program
-	int 0x16		   ;    (goes into cl parameter)
-	mov ah, 0x0E
-	int 0x10		   ; Tell user what they entered
-	mov cl, al
-	sub cl, 48
-				   ; Read program from hard disk
-	mov ah, 0x02		   ; BIOS int13h "read sector" function
-	mov al, 1		   ; Number of sectors to read
-	mov ch, 0		   ; Cylinder/track
-	mov dh, 0		   ; Head
-	mov dl, 0x80		   ; Disk number (here, the hard disk)
-	mov bx, 0x07C0		   ; Segment containing the destination buffer
-	mov es, bx
-	mov bx, 0x200		   ; Destination buffer offset
-	int 0x13
-
-	jmp 0x200		   ; Jump to program
-
-;end hd_bootloader_main
+	%endif; 0
+	
+;end floppy_bootloader_main
 
 
-welcome_string: db 13, 10, 13, 10, "Welcome to the OS.", 0
-prompt_string: db 13, 10, "Select a disk (F/H) from which to run a program", 13, 10, "   (F, sector 3 to 'assemble' to HD): ", 0
+welcome_string: db 13, 10, "Booted from the hard disk. Welcome to the OS! Choose an action:", 0
+option_1_string: db 13, 10, 9, "1) Run a program/read a file (from a known sector)", 0
+option_2_string: db 13, 10, 9, "2) Copy a sector from floppy to disk", 0
+option_3_string: db 13, 10, 9, "3) Show filesystem", 13, 10, 9, 0
+invalid_choice_string: db 13, 10, "Invalid choice.", 0
+prog_copy_mesg: db 13, 10, "Successfully loaded the program copying program into memory.", 0
+
+print:
+	PUSHA
+	MOV AH, 0x0E
+	print_loop:
+		MOV AL, BYTE [BX]
+		INT 0x10
+		INC BX
+		CMP BYTE [BX], 0
+		JNE print_loop
+	POPA
+	RET 	
+
+get_run_program_sector:
+	PUSHA
+	MOV AH, 0x02		   ; BIOS int13h "read sector" function
+	MOV AL, 1		   ; Number of sectors to read
+	MOV CL, 2		   ; "run program" program is always located on sector 2 of HDD
+	MOV CH, 0		   ; Cylinder/track
+	MOV DH, 0		   ; Head
+	MOV DL, 0x80		   ; Disk number (here, the hard disk)
+	MOV BX, 0x07C0		   ; Segment containing the destination buffer
+	MOV ES, BX
+	MOV BX, 0x200		   ; Destination buffer offset (will jump here)
+	INT 0x13
+	POPA
+	RET
+
+get_program_copy_sector:
+	PUSHA
+	MOV AH, 0x02		   ; BIOS int13h "read sector" function
+	MOV AL, 1		   ; Number of sectors to read
+	MOV CL, 3		   ; "sector copy" program is always located on sector 3 of HDD
+	MOV CH, 0		   ; Cylinder/track
+	MOV DH, 0		   ; Head
+	MOV DL, 0x80		   ; Disk number (here, the hard disk)
+	MOV BX, 0x07C0		   ; Segment containing the destination buffer
+	MOV ES, BX
+	MOV BX, 0x200		   ; Destination buffer offset (will jump here)
+	INT 0x13
+	POPA
+	RET
+
+get_show_filesystem_sector:	
+	PUSHA
+	MOV AH, 0x02		   ; BIOS int13h "read sector" function
+	MOV AL, 1		   ; Number of sectors to read
+	MOV CL, 4		   ; "show filesystem" program is always located on sector 4 of HDD
+	MOV CH, 0		   ; Cylinder/track
+	MOV DH, 0		   ; Head
+	MOV DL, 0x80		   ; Disk number (here, the hard disk)
+	MOV BX, 0x07C0		   ; Segment containing the destination buffer
+	MOV ES, BX
+	MOV BX, 0x200		   ; Destination buffer offset (will jump here)
+	INT 0x13
+	POPA
+	RET
+	
 
 times 510-($-$$) db 0		; Pad rest of sector and add bootloader signature
 dw 0xAA55
